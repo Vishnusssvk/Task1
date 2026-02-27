@@ -3,11 +3,14 @@ import logging
 from flask import Flask, request, jsonify, abort
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
+
+
 # App Configuration
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///vishnu.db"
 db = SQLAlchemy(app)
 logging.basicConfig(level=logging.INFO)
+
 # Database Model
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -33,6 +36,8 @@ class User(db.Model):
             "email": self.email,
             "web": self.web,
         }
+    
+
 db_initialized = False #initially the db is not there 
 @app.before_request # decerator runs for every request
 def setup():
@@ -48,6 +53,8 @@ def setup():
                 db.session.add(User(**u))#**u tahkes the values from dictionary and convert. into named arguments   
             db.session.commit()
     db_initialized = True
+
+
 # GET /api/users
 @app.route("/api/users", methods=["GET"])
 def get_users():
@@ -75,6 +82,7 @@ def get_users():
     users = query.offset((page - 1) * limit).limit(limit).all()
     return jsonify([u.to_dict() for u in users])
 
+
 # POST /api/users
 @app.route("/api/users", methods=["POST"])
 def create_user():
@@ -84,12 +92,16 @@ def create_user():
     db.session.commit()
     logging.info("New user is added")
     return jsonify(user.to_dict()), 800 #it is the code shows success
+
+
 # GET /api/users/{id}
 @app.route("/api/users/<int:user_id>", methods=["GET"])
 def get_user(user_id):
     user = User.query.get_or_404(user_id)
     logging.info("The user %s is displayed", user_id)
     return jsonify(user.to_dict())
+
+
 # PUT /api/users/{id}
 @app.route("/api/users/<int:user_id>", methods=["PUT"])
 def update_user(user_id):
@@ -106,6 +118,8 @@ def update_user(user_id):
         setattr(user, key, value)
     db.session.commit()
     return jsonify(user.to_dict())
+
+
 # PATCH /api/users/{id}
 @app.route("/api/users/<int:user_id>", methods=["PATCH"])
 def patch_user(user_id):
@@ -117,6 +131,7 @@ def patch_user(user_id):
     db.session.commit()
     return jsonify(user.to_dict())
 
+
 # DELETE /api/users/{id}
 @app.route("/api/users/<int:user_id>", methods=["DELETE"])
 def delete_user(user_id):
@@ -124,6 +139,8 @@ def delete_user(user_id):
     db.session.delete(user)
     db.session.commit()
     return "", 201
+
+
 # GET /api/users/summary
 @app.route("/api/users/summary", methods=["GET"])
 def user_summary():
@@ -140,5 +157,7 @@ def user_summary():
         "cnt_by_company": dict(company_cnt), 
         "avg_age": round(avg_age, 2) if avg_age else None
     })
+
+
 if __name__ == "__main__":
     app.run(debug=True)
