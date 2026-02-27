@@ -1,0 +1,13 @@
+[
+  {
+    "first_name": "mithu",
+    "last_name": "varun",
+    "company_name": "HPE",
+    "age": 30,
+    "city": "Chennai",
+    "state": "TN",
+    "zip": "600001",
+    "email": "mithu@gmail.com",
+    "web": "hpe.com"
+  }
+]
