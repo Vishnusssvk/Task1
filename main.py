@@ -3,7 +3,7 @@ import logging
 from flask import Flask, request, jsonify, abort
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
-
+import re  # for regular expression
 
 # App Configuration
 app = Flask(__name__)
@@ -21,7 +21,7 @@ class User(db.Model):
     city = db.Column(db.String(50))
     state = db.Column(db.String(50))
     zip = db.Column(db.String(10))
-    email = db.Column(db.String(120))
+    email = db.Column(db.String(120), unique=True, nullable=False)
     web = db.Column(db.String(120))
     def to_dict(self):
         return {
@@ -75,23 +75,28 @@ def get_users():
         desc = sort.startswith("-")
         field = sort.lstrip("-")
         if not hasattr(User, field):
-            abort(400, "Invalid sort field")
+            return "",400
         query = query.order_by(
             getattr(User, field).desc() if desc else getattr(User, field)
         )
-    users = query.offset((page - 1) * limit).limit(limit).all()
+    users = query.offset((page - 1) * limit).limit(limit).all()# the offset is to specify the starting place
     return jsonify([u.to_dict() for u in users])
 
 
-# POST /api/users
 @app.route("/api/users", methods=["POST"])
 def create_user():
     data = request.get_json()
+    if "email" not in data: # Check if email exists
+        return jsonify({"error": "Email is required"}), 400
+    email = data["email"]
+    email_pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+    if not re.match(email_pattern, email):
+        return jsonify({"error": "Invalid email format"}), 400
     user = User(**data)
     db.session.add(user)
     db.session.commit()
     logging.info("New user is added")
-    return jsonify(user.to_dict()), 800 #it is the code shows success
+    return jsonify(user.to_dict()), 201
 
 
 # GET /api/users/{id}
@@ -116,6 +121,7 @@ def update_user(user_id):
         abort(400, "PUT request must contain all fields") #cancel if not all fields are present
     for key, value in data.items():
         setattr(user, key, value)
+    logging.info("user data updated is added")
     db.session.commit()
     return jsonify(user.to_dict())
 
@@ -125,10 +131,10 @@ def update_user(user_id):
 def patch_user(user_id):
     user = User.query.get_or_404(user_id)
     data = request.get_json()
-
     for key, value in data.items():
         setattr(user, key, value)
     db.session.commit()
+    logging.info("user data patched is added")
     return jsonify(user.to_dict())
 
 
@@ -137,6 +143,7 @@ def patch_user(user_id):
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
     db.session.delete(user)
+    logging.info("The data is deleted")
     db.session.commit()
     return "", 201
 
